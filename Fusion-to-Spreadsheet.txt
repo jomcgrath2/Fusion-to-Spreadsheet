@@ -1,15 +1,15 @@
-var tableID = '2178714' // Add the table ID of the fusion table here
+var tableList = ['2971532','2971532','2971532','2971532']; // Add the table ID of the fusion table here
 var rangeName = 'updateSpreadsheet'
     
 function onOpen() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var menuEntries = [ {name: "Update Spreadsheet", functionName: "updateSpreadsheet"}, 
+  var menuEntries = [ {name: "Update Spreadsheet", functionName: "masterSpreadsheet"}, 
                       {name: "Change Email Information", functionName: "fixEmail"},
                       {name: "Select Cell Where Import Starts (This will be the line with headers)", functionName: "setRangeUpdateSpread"}];
   ss.addMenu("Fusion to Spreadsheet", menuEntries);
 }
-    
-function updateSpreadsheet() {
+
+function masterSpreadsheet() {
   var email = UserProperties.getProperty('email');
   var password = UserProperties.getProperty('password');
 
@@ -22,9 +22,36 @@ function updateSpreadsheet() {
     email = UserProperties.getProperty('email');
     password = UserProperties.getProperty('password');
   }
-
-  //select Data
+  
   var authToken = getGAauthenticationToken(email,password);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Fusion to Spreadsheet");
+  var namedRange = ss.getRangeByName(rangeName)
+  var strow = namedRange.getRow()
+  var stcolumn = namedRange.getColumn()
+  for (var i = 0; i < tableList.length; ++i) {
+    //get table info
+    var responseCsv = selectData(tableList[i],authToken);    
+    //parse the CSV and setValues
+    var resParse  = CSVParse(responseCsv.getContentText());
+    var length = resParse.length;
+    resParse.splice(length - 1, 1)
+    length = length - 1;
+    if (i>0){
+      resParse.splice(0, 1)
+      length = length - 1;
+    }
+    var width = resParse[0].length;
+    var range = sheet.getRange(strow, stcolumn, length, width);
+    range.setValues(resParse);
+    strow = strow + length;
+  }
+}
+
+
+
+//Select data from Table
+function selectData(tableID,authToken) {
   var query = encodeURIComponent("SELECT * FROM " + tableID);
   var URL = "http://www.google.com/fusiontables/api/query?sql=" + query;
 
@@ -34,18 +61,9 @@ function updateSpreadsheet() {
           "Authorization": "GoogleLogin auth=" + authToken,
      }
   });
-  
-  //parse the CSV and setValues
-  var resParse  = CSVParse(responseCsv.getContentText());
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var range = ss.getRangeByName(rangeName)
-  range = range.getCell(1,1)
-  for (var i in resParse) {
-    for (var j in resParse[i]) {
-      range.offset(i, j).setValue(resParse[i][j]);
-    }
-  }
+  return responseCsv;
 }
+
 
 //Google Authentication API
 function getGAauthenticationToken(email, password) {
@@ -60,7 +78,11 @@ function getGAauthenticationToken(email, password) {
   return responseStr;
 }
 
-function CSVParse( strData, strDelimiter ){
+
+
+
+//Parse the CSV File
+function CSVParse(strData, strDelimiter){
   // Check to see if the delimiter is defined. If not,
   // then default to comma.
   strDelimiter = (strDelimiter || ",");
@@ -107,6 +129,9 @@ function CSVParse( strData, strDelimiter ){
   return( arrData );
 }
 
+
+
+
 //change email if needed
 function fixEmail() {
    var decision = Browser.msgBox("WARNING", "Are you sure you want to change your email?", Browser.Buttons.YES_NO);
@@ -117,6 +142,9 @@ function fixEmail() {
      UserProperties.setProperty('password', password);
    }
 }
+
+
+
 
 //set cell start range
 function setRangeUpdateSpread() {
@@ -129,6 +157,6 @@ function setRangeUpdateSpread() {
          }
      var range = SpreadsheetApp.getActiveRange()
      ss.setNamedRange(rangeName, range);
-     Browser.msgBox("WARNING", "The range \"" + rangeName + "\" used to send data to Fusion has been changed.", Browser.Buttons.OK);
+     Browser.msgBox("WARNING", "The range \'" + rangeName + "\' used to send data to Fusion has been changed.", Browser.Buttons.OK);
    }
 }

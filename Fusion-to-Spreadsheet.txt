@@ -1,50 +1,50 @@
-var tableList = ['2971532','2971532','2971532','2971532']; // Add the table ID of the fusion table here
-var rangeName = 'updateSpreadsheet'
+var tableList = ['2178714','2178714']; // Add table IDs of all the fusion tables that will be pulled from
+var rangeName = 'updateSpreadsheet'  //name used for the cell where data will start being input
     
 function onOpen() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();  //gets active spreadsheet
+  //menu entries taht will go in the dropdown list created
   var menuEntries = [ {name: "Update Spreadsheet", functionName: "masterSpreadsheet"}, 
                       {name: "Change Email Information", functionName: "fixEmail"},
                       {name: "Select Cell Where Import Starts (This will be the line with headers)", functionName: "setRangeUpdateSpread"}];
-  ss.addMenu("Fusion to Spreadsheet", menuEntries);
+  ss.addMenu("Fusion to Spreadsheet", menuEntries); //create a button in the toolbar for the menu entries to go
 }
 
 function masterSpreadsheet() {
-  var email = UserProperties.getProperty('email');
-  var password = UserProperties.getProperty('password');
-
+  var email = UserProperties.getProperty('email');  //gets the user property 'email' out of project properties 
+  var password = UserProperties.getProperty('password');  //gets the user property 'password' out of project properties
+  //if either email or password is not saved in project properties this will store them there
   if (email === null || password === null) {
-    email = Browser.inputBox('Enter email');
-    password = Browser.inputBox('Enter password');
-    UserProperties.setProperty('email',email);
-    UserProperties.setProperty('password', password);
+    email = Browser.inputBox('Enter email');  //browser box to input email
+    password = Browser.inputBox('Enter password');  //browser box to input password
+    UserProperties.setProperty('email',email);  //sets email as a user property called 'email'
+    UserProperties.setProperty('password', password); //sets password as a user property called 'password'
   } else {
-    email = UserProperties.getProperty('email');
-    password = UserProperties.getProperty('password');
+    email = UserProperties.getProperty('email');  //gets user property 'email' out of project properties MAY BE REMOVED
+    password = UserProperties.getProperty('password'); //gets the user property 'password' out of project properties MAY BE REMOVED
   }
   
-  var authToken = getGAauthenticationToken(email,password);
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("Fusion to Spreadsheet");
-  var namedRange = ss.getRangeByName(rangeName)
-  var strow = namedRange.getRow()
-  var stcolumn = namedRange.getColumn()
+  var authToken = getGAauthenticationToken(email,password); //call getGAauthenticationToken send email and password infomation
+  var ss = SpreadsheetApp.getActiveSpreadsheet();  //get active spreadsheet
+  var namedRange = ss.getRangeByName(rangeName);  //gets the range set by the user
+  var sheet = namedRange.getSheet();  //get sheet where named range is located
+  var strow = namedRange.getRow();  //gets the first row in that range
+  var stcolumn = namedRange.getColumn(); //gets the first column in that range
+  //for loop through all the fusion tables in the tableList array
   for (var i = 0; i < tableList.length; ++i) {
-    //get table info
-    var responseCsv = selectData(tableList[i],authToken);    
-    //parse the CSV and setValues
-    var resParse  = CSVParse(responseCsv.getContentText());
-    var length = resParse.length;
-    resParse.splice(length - 1, 1)
-    length = length - 1;
+    var responseCsv = selectData(tableList[i],authToken);  //call select data and send the ith table from table list as well as the authentication token
+    var resParse  = CSVParse(responseCsv.getContentText());  //call CSV parse send the response csv text
+    var length = resParse.length;  //get number of rows in resparse
+    resParse.splice(length - 1, 1) //takes off last row of resparse which is blank
+    length = length - 1; //redefines the length to fit the modified array
     if (i>0){
-      resParse.splice(0, 1)
-      length = length - 1;
+      resParse.splice(0, 1) //if this is the second through nth table the first row (the headers) is removed
+      length = length - 1; //length is redefined to fit modified array
     }
-    var width = resParse[0].length;
-    var range = sheet.getRange(strow, stcolumn, length, width);
-    range.setValues(resParse);
-    strow = strow + length;
+    var width = resParse[0].length;  //gets the number of columns in the array
+    var range = sheet.getRange(strow, stcolumn, length, width); //gets the range where data will be placed.  starting point is the row and column of the range, length is the length of the array, width is width of the array.
+    range.setValues(resParse);  //sets the range to equal the array this is the same as doing a for loop with offsets and setting each cell to each value but significantly faster
+    strow = strow + length;  //sets a new starting row so the data doesnt over write itself
   }
 }
 
@@ -52,20 +52,20 @@ function masterSpreadsheet() {
 
 //Select data from Table
 function selectData(tableID,authToken) {
-  var query = encodeURIComponent("SELECT * FROM " + tableID);
-  var URL = "http://www.google.com/fusiontables/api/query?sql=" + query;
-
+  var query = encodeURIComponent("SELECT * FROM " + tableID);  //encodes the contents to a url format this is the same as a url converter online
+  var URL = "http://www.google.com/fusiontables/api/query?sql=" + query;  //combines the prepend to the query
+  //this gets the return value from the google server it is an unparsed CSV
   var responseCsv = UrlFetchApp.fetch(URL, {
      method: "get",
      headers: {
           "Authorization": "GoogleLogin auth=" + authToken,
      }
   });
-  return responseCsv;
+  return responseCsv;  //send the unparsed CSV back
 }
 
 
-//Google Authentication API
+//Google Authentication API this is taken directly from the google fusion api website
 function getGAauthenticationToken(email, password) {
   password = encodeURIComponent(password);
   var response = UrlFetchApp.fetch("https://www.google.com/accounts/ClientLogin", {
@@ -102,8 +102,9 @@ function CSVParse(strData, strDelimiter){
     "gi"
   );
 
-  var arrData = [[]];
-  var arrMatches = null;
+  var arrData = [[]];  //creates array where data will be stored
+  var arrMatches = null; //creates a variable to store the matches
+  //this parses through the information and figures out when to break them into a new piece in the array based on the delimiter created above
   while (arrMatches = objPattern.exec( strData )){
     var strMatchedDelimiter = arrMatches[ 1 ];
     if (
@@ -134,12 +135,12 @@ function CSVParse(strData, strDelimiter){
 
 //change email if needed
 function fixEmail() {
-   var decision = Browser.msgBox("WARNING", "Are you sure you want to change your email?", Browser.Buttons.YES_NO);
+   var decision = Browser.msgBox("WARNING", "Are you sure you want to change your email?", Browser.Buttons.YES_NO);  //browser box to confirm change
    if (decision == 'yes'){
-     var email = Browser.inputBox('Enter email');
-     var password = Browser.inputBox('Enter password');
-     UserProperties.setProperty('email',email);
-     UserProperties.setProperty('password', password);
+     var email = Browser.inputBox('Enter email');  //input new email
+     var password = Browser.inputBox('Enter password'); //input new password
+     UserProperties.setProperty('email',email); //set new email in user properties in the Project Properties
+     UserProperties.setProperty('password', password); //set new password in the user properties in the Project Properties
    }
 }
 
@@ -148,15 +149,15 @@ function fixEmail() {
 
 //set cell start range
 function setRangeUpdateSpread() {
-   var decision = Browser.msgBox("WARNING", "Are you sure you want to change the start cell to Update the Spreadsheet?", Browser.Buttons.YES_NO);
+   var decision = Browser.msgBox("WARNING", "Are you sure you want to change the start cell to Update the Spreadsheet?", Browser.Buttons.YES_NO);  //browser box confirmation change
    if (decision == 'yes'){
-     var ss = SpreadsheetApp.getActiveSpreadsheet();
-     var check = ss.getRangeByName(rangeName)
+     var ss = SpreadsheetApp.getActiveSpreadsheet();  //get active spreasheet
+     var check = ss.getRangeByName(rangeName) //gets the named range
          if (check != null) {
-           ss.removeNamedRange(rangeName);
+           ss.removeNamedRange(rangeName); //if the new named range exists delete it
          }
-     var range = SpreadsheetApp.getActiveRange()
-     ss.setNamedRange(rangeName, range);
-     Browser.msgBox("WARNING", "The range \'" + rangeName + "\' used to send data to Fusion has been changed.", Browser.Buttons.OK);
+     var range = SpreadsheetApp.getActiveRange()  //get current range selected
+     ss.setNamedRange(rangeName, range);  //set that range to rangeName
+     Browser.msgBox("WARNING", "The range \'" + rangeName + "\' used to send data to Fusion has been changed.", Browser.Buttons.OK); //confirmation messege
    }
 }

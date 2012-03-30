@@ -1,6 +1,14 @@
-var tableID = '2178714' // Add the table ID of the fusion table here
-var startCell = 'A1'  //Cell where data will start being input
+var tableID = '1414165' // Add the table ID of the fusion table here
+//var sheetNumber = 1 //Sheet number goes here (the first sheet is number 1 second is number 2 etc.)
+//var startCell = 'A1'  //Cell where data will start being input
 
+function onOpen() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var menuEntries = [ {name: "Update Spreadsheet", functionName: "updateSpreadsheet"}, 
+                      {name: "Change Email Information", functionName: "fixEmail"},
+                      {name: "Select Cell Where Import Starts (This will be the line with headers)", functionName: "setRangeUpdateSpread"}];
+  ss.addMenu("Fusion to Spreadsheet", menuEntries);
+}
     
 function updateSpreadsheet() {
   var email = UserProperties.getProperty('email');
@@ -17,7 +25,7 @@ function updateSpreadsheet() {
   }
 
   var authToken = getGAauthenticationToken(email,password);
-  query = encodeURIComponent("SELECT * FROM " + tableID);
+  var query = encodeURIComponent("SELECT * FROM " + tableID);
   var URL = "http://www.google.com/fusiontables/api/query?sql=" + query;
 
   var responseCsv = UrlFetchApp.fetch(URL, {
@@ -28,7 +36,9 @@ function updateSpreadsheet() {
   });
   var resParse  = Utilities.parseCsv(responseCsv.getContentText());
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var range = ss.getSheets()[1].getRange(startCell);
+  //var range = ss.getSheets()[sheetNumber - 1].getRange(startCell);
+  var range = ss.getRangeByName('updateSpreadsheet')
+  range = range.getCell(1,1)
   //SpreadsheetApp.setActiveRange(range);
   for (var i in resParse) {
     for (var j in resParse[i]) {
@@ -47,4 +57,26 @@ function getGAauthenticationToken(email, password) {
   responseStr = responseStr.slice(responseStr.search("Auth=") + 5, responseStr.length);
   responseStr = responseStr.replace(/\n/g, "");
   return responseStr;
+}
+
+//change email if needed
+function fixEmail() {
+   var decision = Browser.msgBox("WARNING", "Are you sure you want to change your email?", Browser.Buttons.YES_NO);
+   if (decision == 'yes'){
+     var email = Browser.inputBox('Enter email');
+     var password = Browser.inputBox('Enter password');
+     UserProperties.setProperty('email',email);
+     UserProperties.setProperty('password', password);
+   }
+}
+
+//set range
+function setRangeUpdateSpread() {
+   var decision = Browser.msgBox("WARNING", "Are you sure you want to change the cell to Update the Spreadsheet?", Browser.Buttons.YES_NO);
+   if (decision == 'yes'){
+     var ss = SpreadsheetApp.getActiveSpreadsheet();
+     var range = SpreadsheetApp.getActiveRange()
+     ss.setNamedRange("updateSpreadsheet", range);
+     Browser.msgBox("WARNING", "The range 'updateSpreadsheet' used to send data to Fusion has been changed.", Browser.Buttons.OK);
+   }
 }

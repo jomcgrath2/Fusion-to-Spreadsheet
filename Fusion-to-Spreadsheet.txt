@@ -1,0 +1,50 @@
+var tableID = '2178714' // Add the table ID of the fusion table here
+var startCell = 'A1'  //Cell where data will start being input
+
+    
+function updateSpreadsheet() {
+  var email = UserProperties.getProperty('email');
+  var password = UserProperties.getProperty('password');
+
+  if (email === null || password === null) {
+    email = Browser.inputBox('Enter email');
+    password = Browser.inputBox('Enter password');
+    UserProperties.setProperty('email',email);
+    UserProperties.setProperty('password', password);
+  } else {
+    email = UserProperties.getProperty('email');
+    password = UserProperties.getProperty('password');
+  }
+
+  var authToken = getGAauthenticationToken(email,password);
+  query = encodeURIComponent("SELECT * FROM " + tableID);
+  var URL = "http://www.google.com/fusiontables/api/query?sql=" + query;
+
+  var responseCsv = UrlFetchApp.fetch(URL, {
+     method: "get",
+     headers: {
+          "Authorization": "GoogleLogin auth=" + authToken,
+     }
+  });
+  var resParse  = Utilities.parseCsv(responseCsv.getContentText());
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var range = ss.getSheets()[1].getRange(startCell);
+  //SpreadsheetApp.setActiveRange(range);
+  for (var i in resParse) {
+    for (var j in resParse[i]) {
+      range.offset(i, j).setValue(resParse[i][j]);
+    }
+  }
+}
+
+function getGAauthenticationToken(email, password) {
+  password = encodeURIComponent(password);
+  var response = UrlFetchApp.fetch("https://www.google.com/accounts/ClientLogin", {
+    method: "post",
+    payload: "accountType=GOOGLE&Email=" + email + "&Passwd=" + password + "&service=fusiontables&Source=testing"
+  });
+  var responseStr = response.getContentText();
+  responseStr = responseStr.slice(responseStr.search("Auth=") + 5, responseStr.length);
+  responseStr = responseStr.replace(/\n/g, "");
+  return responseStr;
+}

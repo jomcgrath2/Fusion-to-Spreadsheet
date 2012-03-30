@@ -1,5 +1,6 @@
 var tableID = '2178714' // Add the table ID of the fusion table here
-
+var rangeName = 'updateSpreadsheet'
+    
 function onOpen() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var menuEntries = [ {name: "Update Spreadsheet", functionName: "updateSpreadsheet"}, 
@@ -36,9 +37,8 @@ function updateSpreadsheet() {
   
   //parse the CSV and setValues
   var resParse  = CSVParse(responseCsv.getContentText());
-  //var resParse  = Utilities.parseCsv(responseCsv.getContentText());
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var range = ss.getRangeByName('updateSpreadsheet')
+  var range = ss.getRangeByName(rangeName)
   range = range.getCell(1,1)
   for (var i in resParse) {
     for (var j in resParse[i]) {
@@ -123,8 +123,12 @@ function setRangeUpdateSpread() {
    var decision = Browser.msgBox("WARNING", "Are you sure you want to change the start cell to Update the Spreadsheet?", Browser.Buttons.YES_NO);
    if (decision == 'yes'){
      var ss = SpreadsheetApp.getActiveSpreadsheet();
+     var check = ss.getRangeByName(rangeName)
+         if (check != null) {
+           ss.removeNamedRange(rangeName);
+         }
      var range = SpreadsheetApp.getActiveRange()
-     ss.setNamedRange("updateSpreadsheet", range);
-     Browser.msgBox("WARNING", "The range 'updateSpreadsheet' used to send data to Fusion has been changed.", Browser.Buttons.OK);
+     ss.setNamedRange(rangeName, range);
+     Browser.msgBox("WARNING", "The range \"" + rangeName + "\" used to send data to Fusion has been changed.", Browser.Buttons.OK);
    }
 }

@@ -1,6 +1,4 @@
-var tableID = '1414165' // Add the table ID of the fusion table here
-//var sheetNumber = 1 //Sheet number goes here (the first sheet is number 1 second is number 2 etc.)
-//var startCell = 'A1'  //Cell where data will start being input
+var tableID = '2178714' // Add the table ID of the fusion table here
 
 function onOpen() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -24,6 +22,7 @@ function updateSpreadsheet() {
     password = UserProperties.getProperty('password');
   }
 
+  //select Data
   var authToken = getGAauthenticationToken(email,password);
   var query = encodeURIComponent("SELECT * FROM " + tableID);
   var URL = "http://www.google.com/fusiontables/api/query?sql=" + query;
@@ -34,12 +33,11 @@ function updateSpreadsheet() {
           "Authorization": "GoogleLogin auth=" + authToken,
      }
   });
+  
   var resParse  = Utilities.parseCsv(responseCsv.getContentText());
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  //var range = ss.getSheets()[sheetNumber - 1].getRange(startCell);
   var range = ss.getRangeByName('updateSpreadsheet')
   range = range.getCell(1,1)
-  //SpreadsheetApp.setActiveRange(range);
   for (var i in resParse) {
     for (var j in resParse[i]) {
       range.offset(i, j).setValue(resParse[i][j]);
@@ -47,6 +45,7 @@ function updateSpreadsheet() {
   }
 }
 
+//Google Authentication API
 function getGAauthenticationToken(email, password) {
   password = encodeURIComponent(password);
   var response = UrlFetchApp.fetch("https://www.google.com/accounts/ClientLogin", {
@@ -70,9 +69,9 @@ function fixEmail() {
    }
 }
 
-//set range
+//set cell start range
 function setRangeUpdateSpread() {
-   var decision = Browser.msgBox("WARNING", "Are you sure you want to change the cell to Update the Spreadsheet?", Browser.Buttons.YES_NO);
+   var decision = Browser.msgBox("WARNING", "Are you sure you want to change the start cell to Update the Spreadsheet?", Browser.Buttons.YES_NO);
    if (decision == 'yes'){
      var ss = SpreadsheetApp.getActiveSpreadsheet();
      var range = SpreadsheetApp.getActiveRange()

@@ -34,7 +34,9 @@ function updateSpreadsheet() {
      }
   });
   
-  var resParse  = Utilities.parseCsv(responseCsv.getContentText());
+  //parse the CSV and setValues
+  var resParse  = CSVParse(responseCsv.getContentText());
+  //var resParse  = Utilities.parseCsv(responseCsv.getContentText());
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var range = ss.getRangeByName('updateSpreadsheet')
   range = range.getCell(1,1)
@@ -56,6 +58,53 @@ function getGAauthenticationToken(email, password) {
   responseStr = responseStr.slice(responseStr.search("Auth=") + 5, responseStr.length);
   responseStr = responseStr.replace(/\n/g, "");
   return responseStr;
+}
+
+function CSVParse( strData, strDelimiter ){
+  // Check to see if the delimiter is defined. If not,
+  // then default to comma.
+  strDelimiter = (strDelimiter || ",");
+
+  // Create a regular expression to parse the CSV values.
+  var objPattern = new RegExp(
+    (
+      // Delimiters.
+      "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+
+      // Quoted fields.
+      "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+
+      // Standard fields.
+      "([^\"\\" + strDelimiter + "\\r\\n]*))"
+    ),
+    "gi"
+  );
+
+  var arrData = [[]];
+  var arrMatches = null;
+  while (arrMatches = objPattern.exec( strData )){
+    var strMatchedDelimiter = arrMatches[ 1 ];
+    if (
+      strMatchedDelimiter.length &&
+      (strMatchedDelimiter != strDelimiter)
+    ){
+      arrData.push( [] );
+    }
+
+    if (arrMatches[ 2 ]){
+      var strMatchedValue = arrMatches[ 2 ].replace(
+        new RegExp( "\"\"", "g" ),
+        "\""
+      );
+
+    } else {
+      var strMatchedValue = arrMatches[ 3 ];
+    }
+    arrData[ arrData.length - 1 ].push( strMatchedValue );
+  }
+
+  // Return the parsed data.
+  return( arrData );
 }
 
 //change email if needed

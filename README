@@ -1,0 +1,10 @@
+This code allows a user to pull information from a single or multiple fusion tables into a single sheet.  The code pulls all of the data from a fusion table including the headers.  The range will be the upper left corner of the data.  This includes the headers.  Pulling multiple tables is mainly useful for pulling several sheets with the same columns.  It is important to note that the first line (ie the column names) will be removed from all but the first table pulled in.  This means that the columns do not necessarily have to be the same but it is usually more useful for consistency.  This code can also be used to create a union table in Google fusion by pulling two tables into a single sheet then uploading it back to a new fusion table.  A limitation of 1 MB can be used in this code.  This has to do with fusion accepting over 1 MB querys.
+
+Implementation Procedure:
+1.  Open the Spreadsheet that the code will be placed in.
+2.  In the toolbar click Tools --> Script Editor.
+4.  If there is already a code in place then a new project should be made for the code that is being implemented.  This should be done by selecting File --> New --> Project.
+5.  Copy the most recent version of the code.
+6.  Paste this version into the Script Editor.
+7.  Change the tableID or IDs variable to the table/tables you want to pull into the sheet. This is found in the fusion table by clicking File --> About under the numberic ID.
+8.  Now reload the spreadsheet.  A new heading will be in the toolbar.  Select the bottom option to set the range of the cell where the data will start being filled in.  This cell is the row where the headers from the fusion table will be located.
